@@ -3,19 +3,19 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 
 const userSchema = new Schema({
-  user_id: { type: String, unique: true },
+  user_id: { type: String, unique: true, required: true },
   user_name: { type: String, required: true, unique: true, trim: true, index: true },
   full_name: { type: String, required: true },
   email: { type: String, required: true, unique: true, trim: true },
-  password: { type: String, required: [true, 'Password is required'], unique: true, trim: true },
+  password: { type: String, required: [true, 'Password is required'], trim: true },
   phone_number: { type: Number, unique: true, trim: true },
   bio: { type: String },
   gender: { type: String, required: true, trim: true },
-  avatar: { type: String, required: true, trim: true }, // cloudinary URL
-  followers: { type: Number },
-  followings: { type: String },
-
+  profile_photo: { type: String, required: true }, // cloudinary URL
   post: [{ type: Schema.Types.ObjectId, ref: 'Recipe' }],
+  followers: { type: Number, default: 0 },
+  followings: { type: Number, default: 0 },
+  refresh_token: { type: String },
 
   //common fields
   created_at: { type: Number },
@@ -30,7 +30,7 @@ const userSchema = new Schema({
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
 
-  this.password = bcrypt.hash(this.password, 10);
+  this.password = await bcrypt.hash(this.password, 10);
 });
 
 //comparing password
