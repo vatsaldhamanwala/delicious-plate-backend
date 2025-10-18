@@ -2,7 +2,7 @@ import { asyncHandler } from '../../utils/async-handler.js';
 import { responseGenerators } from '../../utils/response-generators.js';
 import { USER } from '../../common/global.common.js';
 import { StatusCodes } from 'http-status-codes';
-import { User } from './user.model.js';
+import { User } from './users.model.js';
 import { uploadOnCloudinary } from '../../utils/cloudinary.js';
 import { generatePublicId } from '../../common/functions.common.js';
 
