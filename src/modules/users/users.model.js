@@ -1,5 +1,4 @@
 import mongoose, { Schema } from 'mongoose';
-import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 
 const userSchema = new Schema({
@@ -8,10 +7,9 @@ const userSchema = new Schema({
   full_name: { type: String, required: true },
   email: { type: String, required: true, unique: true, trim: true },
   password: { type: String, required: [true, 'Password is required'], trim: true },
-  phone_number: { type: Number, unique: true, trim: true },
   bio: { type: String },
-  gender: { type: String, required: true, trim: true },
-  profile_photo: { type: String, required: true }, // cloudinary URL
+  gender: { type: String, trim: true },
+  profile_photo: { type: String }, // cloudinary URL
   post: [{ type: Schema.Types.ObjectId, ref: 'Recipe' }],
   followers: { type: Number, default: 0 },
   followings: { type: Number, default: 0 },
@@ -36,35 +34,6 @@ userSchema.pre('save', async function (next) {
 //comparing password
 userSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
-};
-
-// generating access token
-userSchema.methods.generateAccessToken = function () {
-  jwt.sign(
-    {
-      _id: this._id,
-      email: this.email,
-      user_name: this.user_name,
-      full_name: this.full_name,
-    },
-    process.env.ACCESS_TOKEN_SECRET,
-    {
-      expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
-    }
-  );
-};
-
-//generating refresh token
-userSchema.methods.generateRefreshToken = function () {
-  jwt.sign(
-    {
-      _id: this._id,
-    },
-    process.env.REFRESH_TOKEN_SECRET,
-    {
-      expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
-    }
-  );
 };
 
 export const User = mongoose.model('users', userSchema);
