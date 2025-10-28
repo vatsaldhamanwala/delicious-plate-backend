@@ -1,6 +1,6 @@
 import { asyncHandler } from '../../utils/async-handler.js';
 import { responseGenerators } from '../../utils/response-generators.js';
-import { ERROR, USER } from '../../common/global.common.js';
+import { ERROR, TOKEN, USER } from '../../common/global.common.js';
 import { StatusCodes } from 'http-status-codes';
 import { User } from '../users/users.model.js';
 import { Session } from '../sessions/sessions.model.js';
@@ -50,7 +50,7 @@ export const signUpUser = asyncHandler(async (req, res) => {
   console.log('🚀 ~ newUser:', newUser);
 
   // generate JWT token
-  const { accessToken, refreshToken } = await generateTokens({ user_id: newUser.user_id, email: newUser.email });
+  const { accessToken, refreshToken } = await generateTokens({ user_id: newUser.user_id });
 
   //create user sessions
   await Session.create({
@@ -98,7 +98,7 @@ export const loginUser = asyncHandler(async (req, res) => {
   await Session.updateMany({ session_author_id: userExist.user_id, is_expired: false }, { $set: { is_expired: true, expired_at: Date.now() } });
 
   // generate tokens
-  const { accessToken, refreshToken } = await generateTokens({ user_id: userExist.user_id, email: userExist.email });
+  const { accessToken, refreshToken } = await generateTokens({ user_id: userExist.user_id });
 
   await Session.create({
     session_id: generatePublicId(),
@@ -144,8 +144,58 @@ export const logoutUser = asyncHandler(async (req, res) => {
       .clearCookie('refreshToken', options)
       .send(responseGenerators({}, StatusCodes.OK, USER.LOGOUT, false));
   } catch (error) {
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send(responseGenerators({ error }, StatusCodes.INTERNAL_SERVER_ERROR, ERROR.INVALID, true));
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .send(responseGenerators({ error }, StatusCodes.INTERNAL_SERVER_ERROR, ERROR.INTERNAL_SERVER_ERROR, true));
   }
 });
 
 //refresh token
+export const refreshAccessToken = asyncHandler(async (req, res) => {
+  const incomingRefreshToken = req.cookies?.refreshToken;
+  console.log('🚀 ~ incomingRefreshToken:', incomingRefreshToken);
+
+  if (!incomingRefreshToken)
+    return res.status(StatusCodes.UNAUTHORIZED).send(responseGenerators({}, StatusCodes.UNAUTHORIZED, TOKEN.REFRESH_TOKEN_ERROR));
+
+  try {
+    const decodeToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
+    console.log('🚀 ~ decodeToken:', decodeToken);
+
+    const userSessionExist = await Session.findOne({
+      session_author_id: decodeToken.user_id,
+      refresh_token: incomingRefreshToken,
+      is_expired: false,
+    });
+    console.log('🚀 ~ userSessionExist:', userSessionExist);
+
+    if (!userSessionExist) return res.status(StatusCodes.UNAUTHORIZED).send(responseGenerators({}, StatusCodes.UNAUTHORIZED, TOKEN.EXPIRED, true));
+
+    if (incomingRefreshToken !== userSessionExist.refresh_token)
+      return res.status(StatusCodes.UNAUTHORIZED).send(responseGenerators({}, StatusCodes.UNAUTHORIZED, TOKEN.REFRESH_TOKEN_EXPIRED, true));
+
+    const { accessToken, refreshToken } = await generateTokens({
+      user_id: userSessionExist.session_author_id,
+    });
+    console.log('🚀 ~ newRefreshToken:', refreshToken);
+    console.log('🚀 ~ access_token:', accessToken);
+
+    await Session.updateOne(
+      { session_author_id: decodeToken.user_id, is_expired: false },
+      { $set: { access_token: accessToken, refresh_token: refreshToken, updated_at: Date.now() } }
+    );
+
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+
+    return res
+      .status(StatusCodes.OK)
+      .cookie('accessToken', accessToken, options)
+      .cookie('refreshToken', refreshToken, options)
+      .send(responseGenerators({ accessToken, refreshToken }, StatusCodes.OK, TOKEN.REFRESHED, false));
+  } catch (error) {
+    return res.status(StatusCodes.UNAUTHORIZED).send(responseGenerators({ error }, StatusCodes.UNAUTHORIZED, TOKEN.INVALID_REFRESH_TOKEN, true));
+  }
+});

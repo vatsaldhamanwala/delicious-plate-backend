@@ -12,10 +12,15 @@ export const USER = {
 
 export const TOKEN = {
   ERROR: 'Something went wrong while generating access and refresh token.',
+  UNAUTHORIZED: 'Unauthorized access,  please provide valid token.',
+  EXPIRED: 'Unauthorized access, token is expired, please login again.',
+  REFRESH_TOKEN_ERROR: 'Unauthorized access, no token found, please provide valid refresh token or login again to get new token.',
+  REFRESH_TOKEN_EXPIRED: 'Unauthorized access, refresh token is expired or used.',
+  VERIFY_ERROR: 'Something went wrong while verifying tokens.',
+  REFRESHED: 'Access token refreshed successfully.',
+  INVALID_REFRESH_TOKEN: 'Unauthorized access, refresh token is invalid.',
 };
 
 export const ERROR = {
-  INVALID: 'Unauthorized access, invalid token.',
-  UNAUTHORIZED: 'Unauthorized access, no token found or please provide valid token.',
-  EXPIRED: 'Unauthorized access, token is expired, please login again.',
+  INTERNAL_SERVER_ERROR: 'Internal server error, something went wrong while logging out from application.',
 };

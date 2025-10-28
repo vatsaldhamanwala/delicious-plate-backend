@@ -9,7 +9,6 @@ export const generateTokens = async (user) => {
   try {
     const payload = {
       user_id: user.user_id,
-      email: user.email,
     };
     console.log('🚀 ~ generateTokens ~ payload:', payload);
 
