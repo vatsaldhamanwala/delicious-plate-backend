@@ -23,18 +23,35 @@ export const signUpUser = asyncHandler(async (req, res) => {
   if (userExist) return res.status(StatusCodes.BAD_REQUEST).send(responseGenerators({}, StatusCodes.BAD_REQUEST, USER.ALREADY_EXIST, true));
 
   // local file path
+  // let profilePhotoLocalFile;
+
+  // if (req.file && req.file.path) {
+  //   profilePhotoLocalFile = req.file.path;
+  //   console.log('🚀 ~ profilePhotoLocalFile:', profilePhotoLocalFile);
+  // }
+
+  // uploading the local file path using cloudinary
+  // const profilePhoto = await uploadOnCloudinary(profilePhotoLocalFile);
+  // console.log('🚀 ~ profilePhoto:', profilePhoto);
+
+  //generating unique user Id's
+
+  let profilePhoto = { url: '', public_id: '' };
   let profilePhotoLocalFile;
 
   if (req.file && req.file.path) {
     profilePhotoLocalFile = req.file.path;
-    console.log('🚀 ~ profilePhotoLocalFile:', profilePhotoLocalFile);
   }
 
-  // uploading the local file path using cloudinary
-  const profilePhoto = await uploadOnCloudinary(profilePhotoLocalFile);
-  console.log('🚀 ~ profilePhoto:', profilePhoto);
+  const uploadedPhoto = await uploadOnCloudinary(profilePhotoLocalFile);
 
-  //generating unique user Id's
+  if (uploadedPhoto?.url && uploadedPhoto.public_id) {
+    profilePhoto = {
+      url: uploadedPhoto.url || '',
+      public_id: uploadedPhoto.public_id || '',
+    };
+  }
+
   const userId = generatePublicId();
 
   // user creation query
@@ -44,7 +61,7 @@ export const signUpUser = asyncHandler(async (req, res) => {
     full_name,
     email,
     password,
-    profile_photo: profilePhoto?.url || '',
+    profile_photo: profilePhoto,
     created_at: Date.now(),
   });
   console.log('🚀 ~ newUser:', newUser);
