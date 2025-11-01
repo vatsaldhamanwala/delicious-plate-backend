@@ -25,3 +25,16 @@ export const uploadOnCloudinary = async (localFilePath) => {
     return null;
   }
 };
+
+export const deleteOldFileFromCloudinary = async (publicId) => {
+  try {
+    if (!publicId) return null;
+    const result = await cloudinary.uploader.destroy(publicId);
+
+    console.log('delete result: ', result);
+
+    return result;
+  } catch (error) {
+    return console.log('error while deleting profile photo', error);
+  }
+};

@@ -3,7 +3,6 @@ export const USER = {
   NOT_FOUND: 'User not found.',
   FOUND: 'User successfully found.',
   UPDATED: 'User profile successfully updated.',
-
   LOGGED_IN: 'logged in successfully, Welcome to Delicious Plate.',
   LOGOUT: 'You are successfully logout.',
   ALL_FIELDS_ARE_REQUIRED: 'All fields are required.',
@@ -14,6 +13,7 @@ export const USER = {
   INCORRECT_OLD_PASSWORD: 'Your old password is incorrect. Please enter valid old password for resetting new password.',
   INCORRECT_CONFIRM_PASSWORD: 'Your confirm password is incorrect. Please enter valid confirm password for resetting new password.',
   PASSWORD_CHANGE: 'Your password is successfully changed. Please login again with new password.',
+  PROFILE_PHOTO_UPLOAD_ERROR: 'Failed to upload profile through cloudinary. Please try again.',
 };
 
 export const TOKEN = {
