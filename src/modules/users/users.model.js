@@ -9,7 +9,7 @@ const userSchema = new Schema({
   password: { type: String, required: [true, 'Password is required'], trim: true },
   bio: { type: String },
   gender: { type: String, trim: true },
-  profile_photo: { type: String }, // cloudinary URL
+  profile_photo: { url: { type: String }, public_id: { type: String } }, // cloudinary URL
   post: [{ type: Schema.Types.ObjectId, ref: 'Recipe' }],
   followers: { type: Number, default: 0 },
   followings: { type: Number, default: 0 },
