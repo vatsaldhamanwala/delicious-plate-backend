@@ -3,6 +3,7 @@ export const USER = {
   NOT_FOUND: 'User not found.',
   FOUND: 'User successfully found.',
   UPDATED: 'User profile successfully updated.',
+  DELETED: 'User deleted successfully.',
   LOGGED_IN: 'logged in successfully, Welcome to Delicious Plate.',
   LOGOUT: 'You are successfully logout.',
   ALL_FIELDS_ARE_REQUIRED: 'All fields are required.',

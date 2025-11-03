@@ -112,3 +112,18 @@ export const updateUserProfile = asyncHandler(async (req, res) => {
 });
 
 //delete user
+export const deleteUser = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  const userExist = await User.findOne({ user_id: userId });
+
+  if (!userExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, USER.NOT_FOUND, true));
+
+  await User.findOneAndUpdate({ user_id: userId }, { $set: { is_deleted: true, deleted_at: Date.now() } });
+
+  await Session.findOneAndUpdate(
+    { session_author_id: userExist.user_id, is_expired: false },
+    { $set: { is_expired: true, expired_at: Date.now(), updated_at: Date.now() } }
+  );
+
+  return res.status(StatusCodes.OK).send(responseGenerators({}, StatusCodes.OK, USER.DELETED, false));
+});

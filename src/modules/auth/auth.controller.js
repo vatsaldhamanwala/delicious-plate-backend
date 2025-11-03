@@ -102,7 +102,7 @@ export const loginUser = asyncHandler(async (req, res) => {
     return res.status(StatusCodes.BAD_REQUEST).send(responseGenerators({}, StatusCodes.BAD_REQUEST, USER.USERNAME_PASSWORD_REQUIRED, true));
 
   // find user by email and username
-  const userExist = await User.findOne({ user_name: userName });
+  const userExist = await User.findOne({ user_name: userName, is_deleted: false });
 
   if (!userExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, USER.NOT_FOUND, true));
 

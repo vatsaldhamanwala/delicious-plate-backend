@@ -1,9 +1,10 @@
 import { StatusCodes } from 'http-status-codes';
 import { asyncHandler } from '../utils/async-handler.js';
 import { responseGenerators } from '../utils/response-generators.js';
-import { ERROR, TOKEN } from '../common/global.common.js';
+import { TOKEN, USER } from '../common/global.common.js';
 import jwt from 'jsonwebtoken';
 import { Session } from '../modules/sessions/sessions.model.js';
+import { User } from '../modules/users/users.model.js';
 
 export const verifyJWTToken = asyncHandler(async (req, res, next) => {
   try {
@@ -26,7 +27,13 @@ export const verifyJWTToken = asyncHandler(async (req, res, next) => {
 
     if (!userSessionExist) return res.status(StatusCodes.UNAUTHORIZED).send(responseGenerators({}, StatusCodes.UNAUTHORIZED, TOKEN.EXPIRED, true));
 
-    req.user = decodeToken;
+    const userExist = await User.findOne({ user_id: decodeToken.user_id });
+
+    if (!userExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, USER.NOT_FOUND, true));
+
+    if (userExist.is_deleted) return res.status(StatusCodes.FORBIDDEN).send(responseGenerators({}, StatusCodes.FORBIDDEN, USER.NOT_FOUND, true));
+
+    req.user = userExist;
     req.session = userSessionExist;
 
     next();
