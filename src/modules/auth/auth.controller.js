@@ -102,9 +102,11 @@ export const loginUser = asyncHandler(async (req, res) => {
     return res.status(StatusCodes.BAD_REQUEST).send(responseGenerators({}, StatusCodes.BAD_REQUEST, USER.USERNAME_PASSWORD_REQUIRED, true));
 
   // find user by email and username
-  const userExist = await User.findOne({ user_name: userName, is_deleted: false });
+  const userExist = await User.findOne({ user_name: userName });
 
   if (!userExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, USER.NOT_FOUND, true));
+
+  if (userExist.is_deleted) return res.status(StatusCodes.FORBIDDEN).send(responseGenerators({}, StatusCodes.FORBIDDEN, USER.ACCESS_DENIED, true));
 
   // check user password
   const isValidPassword = await userExist.isPasswordCorrect(password);
@@ -178,6 +180,12 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
   try {
     const decodeToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
     console.log('🚀 ~ decodeToken:', decodeToken);
+
+    const userExist = await User.findOne({ user_id: decodeToken.user_id });
+
+    if (!userExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, USER.NOT_FOUND, true));
+
+    if (userExist.is_deleted) return res.status(StatusCodes.FORBIDDEN).send(responseGenerators({}, StatusCodes.FORBIDDEN, USER.ACCESS_DENIED, true));
 
     const userSessionExist = await Session.findOne({
       session_author_id: decodeToken.user_id,

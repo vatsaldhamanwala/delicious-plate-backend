@@ -17,6 +17,14 @@ export const verifyJWTToken = asyncHandler(async (req, res, next) => {
     const decodeToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
     console.log('🚀 ~ decodeToken:', decodeToken);
 
+    const userExist = await User.findOne({ user_id: decodeToken.user_id });
+
+    console.log('user exist: ', userExist);
+
+    if (!userExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, USER.NOT_FOUND, true));
+
+    if (userExist.is_deleted) return res.status(StatusCodes.FORBIDDEN).send(responseGenerators({}, StatusCodes.FORBIDDEN, USER.ACCESS_DENIED, true));
+
     // check user session exist
     const userSessionExist = await Session.findOne({
       access_token: token,
@@ -26,12 +34,6 @@ export const verifyJWTToken = asyncHandler(async (req, res, next) => {
     console.log('🚀 ~ userSessionExist:', userSessionExist);
 
     if (!userSessionExist) return res.status(StatusCodes.UNAUTHORIZED).send(responseGenerators({}, StatusCodes.UNAUTHORIZED, TOKEN.EXPIRED, true));
-
-    const userExist = await User.findOne({ user_id: decodeToken.user_id });
-
-    if (!userExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, USER.NOT_FOUND, true));
-
-    if (userExist.is_deleted) return res.status(StatusCodes.FORBIDDEN).send(responseGenerators({}, StatusCodes.FORBIDDEN, USER.NOT_FOUND, true));
 
     req.user = userExist;
     req.session = userSessionExist;

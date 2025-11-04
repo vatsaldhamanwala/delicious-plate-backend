@@ -15,6 +15,8 @@ export const USER = {
   INCORRECT_CONFIRM_PASSWORD: 'Your confirm password is incorrect. Please enter valid confirm password for resetting new password.',
   PASSWORD_CHANGE: 'Your password is successfully changed. Please login again with new password.',
   PROFILE_PHOTO_UPLOAD_ERROR: 'Failed to upload profile through cloudinary. Please try again.',
+  PROFILE_PHOTO_NOT_FOUND: 'Cannot able to remove profile photo, because no profile found. ',
+  ACCESS_DENIED: 'User is deleted and cannot access to this application.',
 };
 
 export const TOKEN = {

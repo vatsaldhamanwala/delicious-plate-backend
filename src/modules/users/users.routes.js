@@ -8,7 +8,7 @@ const UserRouter = Router();
 UserRouter.post('/change-password', verifyJWTToken, changePassword);
 UserRouter.get('/current-user', verifyJWTToken, getCurrentUser);
 UserRouter.get('/:userId', verifyJWTToken, getUserById);
-UserRouter.patch('/edit-profile', verifyJWTToken, upload.single('profile_photo'), updateUserProfile);
+UserRouter.patch('/edit-profile/:userId', verifyJWTToken, upload.single('profile_photo'), updateUserProfile);
 UserRouter.delete('/:userId', verifyJWTToken, deleteUser);
 
 export default UserRouter;

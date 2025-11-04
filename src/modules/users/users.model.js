@@ -13,7 +13,6 @@ const userSchema = new Schema({
   post: [{ type: Schema.Types.ObjectId, ref: 'Recipe' }],
   followers: { type: Number, default: 0 },
   followings: { type: Number, default: 0 },
-  refresh_token: { type: String },
 
   //common fields
   created_at: { type: Number },

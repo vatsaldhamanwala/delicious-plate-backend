@@ -55,7 +55,7 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
 export const getUserById = asyncHandler(async (req, res) => {
   const { userId } = req.params;
 
-  const userExist = await User.findOne({ user_id: userId }).select('-password');
+  const userExist = await User.findOne({ user_id: userId, is_deleted: false }).select('-password');
   console.log('user exist', userExist);
 
   if (!userExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, USER.NOT_FOUND, true));
@@ -65,28 +65,39 @@ export const getUserById = asyncHandler(async (req, res) => {
 
 //update user profile
 export const updateUserProfile = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+
   const { full_name, user_name, bio, gender, remove_current_photo } = req.body;
 
-  const userExist = await User.findOne({ user_id: req.user.user_id });
+  const userExist = await User.findOne({ user_id: userId });
+
+  console.log('user exist:', userExist);
 
   if (!userExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, USER.NOT_FOUND, true));
+
+  if (userExist.is_deleted) return res.status(StatusCodes.FORBIDDEN).send(responseGenerators({}, StatusCodes.FORBIDDEN, USER.ACCESS_DENIED, true));
 
   let profilePhotoUrl = userExist.profile_photo?.url || '';
   let profilePhotoPublicId = userExist.profile_photo.public_id || '';
   let profilePhotoLocalFile;
 
+  if (remove_current_photo === '')
+    return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, USER.PROFILE_PHOTO_NOT_FOUND, true));
+
   // user only want to remove current profile photo
   if (remove_current_photo === 'true' || remove_current_photo === true) {
+    if (!(profilePhotoUrl || profilePhotoPublicId)) {
+      return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, USER.PROFILE_PHOTO_NOT_FOUND, true));
+    }
+
     if (profilePhotoPublicId) {
       await deleteOldFileFromCloudinary(profilePhotoPublicId);
     }
 
     profilePhotoUrl = '';
     profilePhotoPublicId = '';
-  }
-
-  //user want to upload new profile photo
-  if (req.file && req.file.path) {
+  } else if (req.file && req.file.path) {
+    //user want to upload new profile photo
     profilePhotoLocalFile = req.file.path;
   }
 
@@ -105,7 +116,8 @@ export const updateUserProfile = asyncHandler(async (req, res) => {
 
   await User.findOneAndUpdate(
     { user_id: userExist.user_id },
-    { $set: { full_name, user_name, profile_photo: { url: profilePhotoUrl, public_id: profilePhotoPublicId }, bio, gender, updated_at: Date.now() } }
+    { $set: { full_name, user_name, profile_photo: { url: profilePhotoUrl, public_id: profilePhotoPublicId }, bio, gender, updated_at: Date.now() } },
+    { new: true }
   );
 
   return res.status(StatusCodes.OK).send(responseGenerators({}, StatusCodes.OK, USER.UPDATED, false));
@@ -118,11 +130,12 @@ export const deleteUser = asyncHandler(async (req, res) => {
 
   if (!userExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, USER.NOT_FOUND, true));
 
-  await User.findOneAndUpdate({ user_id: userId }, { $set: { is_deleted: true, deleted_at: Date.now() } });
+  await User.findOneAndUpdate({ user_id: userId, is_deleted: false }, { $set: { is_deleted: true, deleted_at: Date.now(), updated_at: Date.now() } });
 
-  await Session.findOneAndUpdate(
+  await Session.updateMany(
     { session_author_id: userExist.user_id, is_expired: false },
-    { $set: { is_expired: true, expired_at: Date.now(), updated_at: Date.now() } }
+    { $set: { is_expired: true, expired_at: Date.now(), updated_at: Date.now() } },
+    { new: true }
   );
 
   return res.status(StatusCodes.OK).send(responseGenerators({}, StatusCodes.OK, USER.DELETED, false));
