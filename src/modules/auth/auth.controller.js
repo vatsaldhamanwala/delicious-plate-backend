@@ -13,7 +13,7 @@ import jwt from 'jsonwebtoken';
 export const signUpUser = asyncHandler(async (req, res) => {
   const { full_name, user_name, email, password } = req.body;
 
-  if ([user_name, full_name, email, password].some((fields) => fields?.trim() === '')) {
+  if ([full_name, user_name, password].some((fields) => fields?.trim() === '')) {
     return res.status(StatusCodes.BAD_REQUEST).send(responseGenerators({}, StatusCodes.BAD_REQUEST, USER.ALL_FIELDS_ARE_REQUIRED, true));
   }
 
@@ -82,7 +82,8 @@ export const signUpUser = asyncHandler(async (req, res) => {
 
   const options = {
     httpOnly: true,
-    secure: true,
+    secure: false,
+    sameSite: 'lax',
   };
 
   return res
