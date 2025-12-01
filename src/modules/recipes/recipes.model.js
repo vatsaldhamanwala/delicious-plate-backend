@@ -5,8 +5,13 @@ const recipeSchema = new Schema({
   user_id: { type: String },
   user_name: { type: String },
   name: { type: String, required: true },
-  category: { type: String, required: true, trim: true },
-  type: { type: String, required: true, trim: true },
+  diet_preference: { type: [String], enum: ['veg', 'non-veg', 'healthy', 'beverages', 'vegan'], required: true },
+  dish_type: {
+    type: [String],
+    enum: ['burger', 'pizza', 'pasta', 'noodles', 'sandwich', 'panner', 'salad', 'soup', 'salad', 'tea', 'coffee', 'soda'],
+    required: true,
+  },
+  meal_time: { type: [String], enum: ['breakfast', 'lunch', 'evening', 'dinner', 'snacks', 'main course', 'starters'], required: true },
   description: { type: String, required: true },
   photo: { url: { type: String }, public_id: { type: String } }, // cloudinary URL
   number_of_servings: { type: Number, default: 2 },
