@@ -3,12 +3,11 @@ import mongoose, { Schema } from 'mongoose';
 const recipeSchema = new Schema({
   recipe_id: { type: String, unique: true, required: true },
   user_id: { type: String },
-  user_name: { type: String },
-  name: { type: String, required: true },
+  recipe_name: { type: String, required: true },
   diet_preference: { type: [String], enum: ['veg', 'non-veg', 'healthy', 'beverages', 'vegan'], required: true },
   dish_type: {
     type: [String],
-    enum: ['burger', 'pizza', 'pasta', 'noodles', 'sandwich', 'panner', 'salad', 'soup', 'salad', 'tea', 'coffee', 'soda'],
+    enum: ['burger', 'pizza', 'pasta', 'noodles', 'sandwich', 'panner', 'salad', 'soup', 'dessert', 'salad', 'tea', 'coffee', 'soda'],
     required: true,
   },
   meal_time: { type: [String], enum: ['breakfast', 'lunch', 'evening', 'dinner', 'snacks', 'main course', 'starters'], required: true },
@@ -16,8 +15,10 @@ const recipeSchema = new Schema({
   photo: { url: { type: String }, public_id: { type: String } }, // cloudinary URL
   number_of_servings: { type: Number, default: 2 },
   ingredients_used: [{ name: { type: String }, quantity: { type: Number } }],
-  steps: [{ type: string, required: true }],
+  steps: [{ type: String, required: true }],
   likes: { type: Number, default: 0 },
+  status: { type: String, enum: ['draft', 'posted'], default: 'draft' },
+  progress_steps: { type: Number, default: 1 },
 
   //common fields
   created_at: { type: Number },

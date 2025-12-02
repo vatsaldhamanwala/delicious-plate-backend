@@ -22,10 +22,12 @@ app.use(cookieParser());
 // importing routes
 import AuthRoutes from './modules/auth/auth.routes.js';
 import UserRouter from './modules/users/users.routes.js';
+import RecipeRouter from './modules/recipes/recipes.routes.js';
 
 //declaring routes
 app.use('/api/v1/auth', AuthRoutes);
 app.use('/api/v1/users', UserRouter);
+app.use('/api/v1/recipes', RecipeRouter);
 
 export default app;
 // module.exports= app
