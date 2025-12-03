@@ -12,7 +12,7 @@ const recipeSchema = new Schema({
   },
   meal_time: { type: [String], enum: ['breakfast', 'lunch', 'evening', 'dinner', 'snacks', 'main course', 'starters'], required: true },
   description: { type: String, required: true },
-  photo: { url: { type: String }, public_id: { type: String } }, // cloudinary URL
+  recipe_photo: { url: { type: String }, public_id: { type: String } }, // cloudinary URL
   number_of_servings: { type: Number, default: 2 },
   ingredients_used: [{ name: { type: String }, quantity: { type: Number } }],
   steps: [{ type: String, required: true }],
