@@ -23,6 +23,7 @@ export const RECIPE = {
   ALL_FIELDS_ARE_REQUIRED: 'All fields are required.',
   CREATED: 'Recipe created successfully.',
   DRAFT_RECIPE_ALREADY_EXIST: 'Draft recipe is already exists. Please continue for posting recipe.',
+  NOT_FOUND: 'Recipe not found.',
 };
 
 export const TOKEN = {
