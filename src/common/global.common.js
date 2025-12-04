@@ -24,6 +24,9 @@ export const RECIPE = {
   CREATED: 'Recipe created successfully.',
   DRAFT_RECIPE_ALREADY_EXIST: 'Draft recipe is already exists. Please continue for posting recipe.',
   NOT_FOUND: 'Recipe not found.',
+  RECIPE_PHOTO_REQUIRED: 'Recipe photo is required.',
+  STEP_IS_INCOMPLETE: 'Recipe incomplete. Please finish all previous steps before posting recipe.',
+  POSTED: 'Recipe posted successfully.',
 };
 
 export const TOKEN = {

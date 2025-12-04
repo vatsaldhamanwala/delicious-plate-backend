@@ -13,12 +13,14 @@ const recipeSchema = new Schema({
   meal_time: { type: [String], enum: ['breakfast', 'lunch', 'evening', 'dinner', 'snacks', 'main course', 'starters'], required: true },
   description: { type: String, required: true },
   recipe_photo: { url: { type: String }, public_id: { type: String } }, // cloudinary URL
-  number_of_servings: { type: Number, default: 2 },
-  ingredients_used: [{ name: { type: String }, quantity: { type: Number } }],
+  number_of_servings: { type: Number },
+  ingredients_used: [{ name: { type: String, required: true }, quantity: { type: String, required: true } }],
   steps: [{ type: String, required: true }],
   likes: { type: Number, default: 0 },
   status: { type: String, enum: ['draft', 'posted'], default: 'draft' },
-  progress_steps: { type: Number, default: 1 },
+  is_basic_info_step_completed: { type: Boolean, default: false },
+  is_media_step_completed: { type: Boolean, default: false },
+  is_ingredients_and_steps_step_completed: { type: Boolean, default: false },
 
   //common fields
   created_at: { type: Number },

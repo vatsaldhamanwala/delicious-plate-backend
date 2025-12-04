@@ -35,11 +35,9 @@ export const createBasicInfo = asyncHandler(async (req, res) => {
     meal_time,
     description,
     status: 'draft',
+    is_basic_info_step_completed: true,
     created_at: Date.now(),
   });
-
-  //pushing this recipe into users post field
-  await User.findOneAndUpdate({ user_id: req.user.user_id }, { $push: { post: newRecipe._id } }, { new: true, updated_at: Date.now() });
 
   //return respond
   return res.status(StatusCodes.CREATED).send(responseGenerators({ recipe: newRecipe }, StatusCodes.CREATED, RECIPE.CREATED, false));
@@ -64,7 +62,13 @@ export const createMedia = asyncHandler(async (req, res) => {
     recipePhotoLocalFile = req.file.path;
   }
 
+  if (!recipePhotoLocalFile)
+    return res.status(StatusCodes.BAD_REQUEST).send(responseGenerators({}, StatusCodes.BAD_REQUEST, RECIPE.RECIPE_PHOTO_REQUIRED, true));
+
   const uploadedRecipePhoto = await uploadOnCloudinary(recipePhotoLocalFile);
+
+  if (!recipePhoto)
+    return res.status(StatusCodes.BAD_REQUEST).send(responseGenerators({}, StatusCodes.BAD_REQUEST, RECIPE.RECIPE_PHOTO_REQUIRED, true));
 
   if (uploadedRecipePhoto?.url && uploadedRecipePhoto.public_id) {
     recipePhoto = {
@@ -73,21 +77,69 @@ export const createMedia = asyncHandler(async (req, res) => {
     };
   }
 
-  const updatedRecipe = await Recipe.updateOne(
+  if (!uploadedRecipePhoto)
+    return res.status(StatusCodes.BAD_REQUEST).send(responseGenerators({}, StatusCodes.BAD_REQUEST, RECIPE.RECIPE_PHOTO_REQUIRED, true));
+
+  await Recipe.updateOne(
     { recipe_id: recipeId },
-    { $set: { recipe_photo: recipePhoto }, progress_steps: 2, status: 'draft' },
-    { updated_at: Date.now() }
+    { $set: { recipe_photo: recipePhoto, is_media_step_completed: true, status: 'draft', updated_at: Date.now() } },
+    { new: true }
   );
 
-  console.log('Updated Recipe: ', updatedRecipe);
-
   //return respond
-  return res.status(StatusCodes.CREATED).send(responseGenerators({ recipe: updatedRecipe }, StatusCodes.CREATED, RECIPE.CREATED, false));
+  return res.status(StatusCodes.CREATED).send(responseGenerators({}, StatusCodes.CREATED, RECIPE.CREATED, false));
 });
 
 //step-3:- ingredients-and-steps
+export const createIngredientsAndSteps = asyncHandler(async (req, res) => {
+  const { recipeId } = req.params;
+
+  const { number_of_servings, ingredients_used, steps } = req.body;
+
+  if (number_of_servings === 0 || ingredients_used.length === 0 || steps.length === 0) {
+    return res.status(StatusCodes.BAD_REQUEST).send(responseGenerators({}, StatusCodes.BAD_REQUEST, RECIPE.ALL_FIELDS_ARE_REQUIRED, true));
+  }
+
+  //find recipe
+  const recipeExist = await Recipe.findOne({ recipe_id: recipeId, is_deleted: false }, { status: 'draft' });
+
+  console.log('Recipe Exist: ', recipeExist);
+
+  if (!recipeExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, RECIPE.NOT_FOUND, true));
+
+  await Recipe.updateOne(
+    { recipe_id: recipeId },
+    { $set: { number_of_servings, ingredients_used, steps, is_ingredients_and_steps_step_completed: true, status: 'draft', updated_at: Date.now() } },
+    { new: true }
+  );
+
+  //return respond
+  return res.status(StatusCodes.CREATED).send(responseGenerators({}, StatusCodes.CREATED, RECIPE.CREATED, false));
+});
 
 //step-4:- review/ posted
+export const reviewAndPostRecipe = asyncHandler(async (req, res) => {
+  const { recipeId } = req.params;
+
+  //find recipe
+  const recipeExist = await Recipe.findOne({ recipe_id: recipeId, is_deleted: false }, { status: 'draft' });
+
+  console.log('Recipe Exist: ', recipeExist);
+
+  if (!recipeExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, RECIPE.NOT_FOUND, true));
+
+  //check all steps are previous steps are completed
+  if (recipeExist.is_basic_info_step_completed || recipeExist.is_media_step_completed || recipeExist.is_ingredients_and_steps_step_completed)
+    return res.status(StatusCodes.BAD_REQUEST).send(responseGenerators({}, StatusCodes.BAD_REQUEST, RECIPE.STEP_IS_INCOMPLETE, true));
+
+  await Recipe.updateOne({ recipe_id: recipeId }, { $set: { status: 'posted', updated_at: Date.now() } }, { new: true });
+
+  //pushing this recipe into users post field
+  await User.updateOne({ user_id: req.user.user_id }, { $push: { post: recipeExist._id }, $set: { updated_at: Date.now() } }, { new: true });
+
+  //return respond
+  return res.status(StatusCodes.CREATED).send(responseGenerators({}, StatusCodes.CREATED, RECIPE.POSTED, false));
+});
 
 //get recipes
 
