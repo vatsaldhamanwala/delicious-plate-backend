@@ -142,8 +142,30 @@ export const reviewAndPostRecipe = asyncHandler(async (req, res) => {
 });
 
 //get recipes
+export const getAllRecipes = asyncHandler(async (req, res) => {
+  //find recipe
+  const recipeExist = await Recipe.find({ is_deleted: false, status: 'posted' }, { _id: 0, __v: 0 });
+
+  console.log('Recipe Exist: ', recipeExist);
+
+  //return respond
+  return res.status(StatusCodes.OK).send(responseGenerators({ recipes: recipeExist }, StatusCodes.OK, RECIPE.FETCHED, false));
+});
 
 //get recipes by id
+export const getRecipeById = asyncHandler(async (req, res) => {
+  const { recipeId } = req.params;
+
+  //find recipe
+  const recipeExist = await Recipe.findOne({ recipe_id: recipeId, is_deleted: false, status: 'posted' }, { _id: 0, __v: 0 });
+
+  if (!recipeExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, RECIPE.NOT_FOUND, true));
+
+  console.log('Recipe Exist: ', recipeExist);
+
+  //return respond
+  return res.status(StatusCodes.OK).send(responseGenerators({ recipe: recipeExist }, StatusCodes.OK, RECIPE.FETCHED, false));
+});
 
 //update recipes
 

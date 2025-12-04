@@ -27,6 +27,7 @@ export const RECIPE = {
   RECIPE_PHOTO_REQUIRED: 'Recipe photo is required.',
   STEP_IS_INCOMPLETE: 'Recipe incomplete. Please finish all previous steps before posting recipe.',
   POSTED: 'Recipe posted successfully.',
+  FETCHED: 'Recipe fetched successfully.',
 };
 
 export const TOKEN = {
