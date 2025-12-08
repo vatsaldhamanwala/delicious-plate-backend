@@ -5,7 +5,7 @@ import { generatePublicId } from '../../common/functions.common.js';
 import { Recipe } from './recipes.model.js';
 import { responseGenerators } from '../../utils/response-generators.js';
 import { User } from '../users/users.model.js';
-import { uploadOnCloudinary } from '../../utils/cloudinary.js';
+import { deleteOldFileFromCloudinary, uploadOnCloudinary } from '../../utils/cloudinary.js';
 
 //create recipes in 4 steps --> step 1:- basic-info
 export const createBasicInfo = asyncHandler(async (req, res) => {
@@ -135,7 +135,7 @@ export const reviewAndPostRecipe = asyncHandler(async (req, res) => {
   await Recipe.updateOne({ recipe_id: recipeId }, { $set: { status: 'posted', updated_at: Date.now() } }, { new: true });
 
   //pushing this recipe into users post field
-  await User.updateOne({ user_id: req.user.user_id }, { $push: { post: recipeExist._id }, $set: { updated_at: Date.now() } }, { new: true });
+  await User.updateOne({ user_id: req.user.user_id }, { $push: { post: recipeExist._id, updated_at: Date.now() } });
 
   //return respond
   return res.status(StatusCodes.CREATED).send(responseGenerators({}, StatusCodes.CREATED, RECIPE.POSTED, false));
@@ -168,5 +168,106 @@ export const getRecipeById = asyncHandler(async (req, res) => {
 });
 
 //update recipes
+export const updateRecipe = asyncHandler(async (req, res) => {
+  const { recipeId } = req.params;
+
+  const { recipe_name, diet_preference, dish_type, meal_time, description, number_of_servings, ingredients_used, steps } = req.body;
+
+  const recipeExist = await Recipe.findOne({ recipe_id: recipeId, is_deleted: false, status: 'posted' }, { _id: 0, __v: 0 });
+
+  if (!recipeExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, RECIPE.NOT_FOUND, true));
+
+  console.log('Recipe Exist: ', recipeExist);
+
+  // convert string to array of object
+
+  // get url from recipe
+
+  let recipePhoto = { url: recipeExist.recipe_photo?.url, public_id: recipeExist.recipe_photo.public_id };
+  let recipePhotoLocalFile;
+
+  if (req.file && req.file.path) {
+    recipePhotoLocalFile = req.file.path;
+    // delete old photo
+    if (recipePhoto.public_id) {
+      await deleteOldFileFromCloudinary(recipePhoto.public_id);
+    }
+
+    // then upload new one
+    const uploadNewRecipePhoto = await uploadOnCloudinary(recipePhotoLocalFile);
+
+    if (uploadNewRecipePhoto?.url && uploadNewRecipePhoto.public_id) {
+      recipePhoto = {
+        url: uploadNewRecipePhoto.url,
+        public_id: uploadNewRecipePhoto.public_id,
+      };
+    }
+  }
+
+  // updating existing ingredient
+  if (ingredients_used) {
+    const parsedIngredient = JSON.parse(ingredients_used);
+
+    for (const ingredient of parsedIngredient) {
+      if (ingredient._id) {
+        await Recipe.updateOne(
+          { recipe_id: recipeId, 'ingredients_used._id': ingredient._id },
+          { $set: { 'ingredients_used.$.name': ingredient.name, 'ingredients_used.$.quantity': ingredient.quantity } }
+        );
+      } else {
+        // adding new ingredient
+        await Recipe.updateOne({ recipe_id: recipeId }, { $push: { ingredients_used: ingredient } });
+      }
+    }
+  }
+  // updating existing step
+  if (steps) {
+    const parsedStep = JSON.parse(steps);
+
+    for (const step of parsedStep) {
+      if (step._id) {
+        await Recipe.updateOne({ recipe_id: recipeId, 'steps._id': step._id }, { $set: { 'steps.$.description': step.description } });
+      } else {
+        // adding new step
+        await Recipe.updateOne({ recipe_id: recipeId }, { $push: { steps: step } });
+      }
+    }
+  }
+
+  // update
+  await Recipe.updateOne(
+    { recipe_id: recipeId },
+    {
+      $set: {
+        recipe_name,
+        diet_preference,
+        dish_type,
+        meal_time,
+        description,
+        recipe_photo: recipePhoto,
+        number_of_servings,
+        updated_at: Date.now(),
+      },
+    },
+    { new: true }
+  );
+
+  //return respond
+  return res.status(StatusCodes.OK).send(responseGenerators({}, StatusCodes.OK, RECIPE.UPDATED, false));
+});
 
 //delete recipes
+export const deleteRecipe = asyncHandler(async (req, res) => {
+  const { recipeId } = req.params;
+
+  const recipeExist = await Recipe.findOne({ recipe_id: recipeId, is_deleted: false, status: 'posted' }, { _id: 0, __v: 0 });
+
+  if (!recipeExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, RECIPE.NOT_FOUND, true));
+
+  console.log('Recipe Exist: ', recipeExist);
+
+  await Recipe.updateOne({ recipe_id: recipeId }, { $set: { is_deleted: true, deleted_at: Date.now(), updated_at: Date.now() } });
+
+  //return respond
+  return res.status(StatusCodes.OK).send(responseGenerators({}, StatusCodes.OK, RECIPE.DELETED, false));
+});

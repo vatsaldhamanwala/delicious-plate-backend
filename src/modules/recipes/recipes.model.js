@@ -15,7 +15,7 @@ const recipeSchema = new Schema({
   recipe_photo: { url: { type: String }, public_id: { type: String } }, // cloudinary URL
   number_of_servings: { type: Number },
   ingredients_used: [{ name: { type: String, required: true }, quantity: { type: String, required: true } }],
-  steps: [{ type: String, required: true }],
+  steps: [{ description: { type: String, required: true } }],
   likes: { type: Number, default: 0 },
   status: { type: String, enum: ['draft', 'posted'], default: 'draft' },
   is_basic_info_step_completed: { type: Boolean, default: false },

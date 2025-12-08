@@ -28,6 +28,8 @@ export const RECIPE = {
   STEP_IS_INCOMPLETE: 'Recipe incomplete. Please finish all previous steps before posting recipe.',
   POSTED: 'Recipe posted successfully.',
   FETCHED: 'Recipe fetched successfully.',
+  UPDATED: 'Recipe successfully updated.',
+  DELETED: 'Recipe deleted successfully.',
 };
 
 export const TOKEN = {
