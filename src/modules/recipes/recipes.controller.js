@@ -94,9 +94,9 @@ export const createMedia = asyncHandler(async (req, res) => {
 export const createIngredientsAndSteps = asyncHandler(async (req, res) => {
   const { recipeId } = req.params;
 
-  const { number_of_servings, ingredients_used, steps } = req.body;
+  const { number_of_servings, ingredients, steps } = req.body;
 
-  if (number_of_servings === 0 || ingredients_used.length === 0 || steps.length === 0) {
+  if (number_of_servings === 0 || ingredients.length === 0 || steps.length === 0) {
     return res.status(StatusCodes.BAD_REQUEST).send(responseGenerators({}, StatusCodes.BAD_REQUEST, RECIPE.ALL_FIELDS_ARE_REQUIRED, true));
   }
 
@@ -107,9 +107,33 @@ export const createIngredientsAndSteps = asyncHandler(async (req, res) => {
 
   if (!recipeExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, RECIPE.NOT_FOUND, true));
 
+  const ingredientsId = generatePublicId();
+
+  const stepsId = generatePublicId();
+
+  const createIngredients = ingredients.map((ingredient) => ({
+    ingredients_id: ingredientsId,
+    name: ingredient.name,
+    quantity: ingredient.quantity,
+  }));
+
+  const createSteps = steps.map((step) => ({
+    steps_id: stepsId,
+    description: step.description,
+  }));
+
   await Recipe.updateOne(
     { recipe_id: recipeId },
-    { $set: { number_of_servings, ingredients_used, steps, is_ingredients_and_steps_step_completed: true, status: 'draft', updated_at: Date.now() } },
+    {
+      $set: {
+        number_of_servings,
+        ingredients: createIngredients,
+        steps: createSteps,
+        is_ingredients_and_steps_step_completed: true,
+        status: 'draft',
+        updated_at: Date.now(),
+      },
+    },
     { new: true }
   );
 
@@ -122,20 +146,21 @@ export const reviewAndPostRecipe = asyncHandler(async (req, res) => {
   const { recipeId } = req.params;
 
   //find recipe
-  const recipeExist = await Recipe.findOne({ recipe_id: recipeId, is_deleted: false }, { status: 'draft' });
+  const recipeExist = await Recipe.findOne({ recipe_id: recipeId, is_deleted: false, status: 'draft' });
 
   console.log('Recipe Exist: ', recipeExist);
 
   if (!recipeExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, RECIPE.NOT_FOUND, true));
 
   //check all steps are previous steps are completed
-  if (recipeExist.is_basic_info_step_completed || recipeExist.is_media_step_completed || recipeExist.is_ingredients_and_steps_step_completed)
+  if (!recipeExist.is_basic_info_step_completed && !recipeExist.is_media_step_completed && !recipeExist.is_ingredients_and_steps_step_completed)
     return res.status(StatusCodes.BAD_REQUEST).send(responseGenerators({}, StatusCodes.BAD_REQUEST, RECIPE.STEP_IS_INCOMPLETE, true));
 
   await Recipe.updateOne({ recipe_id: recipeId }, { $set: { status: 'posted', updated_at: Date.now() } }, { new: true });
 
   //pushing this recipe into users post field
-  await User.updateOne({ user_id: req.user.user_id }, { $push: { post: recipeExist._id, updated_at: Date.now() } });
+
+  await User.updateOne({ user_id: req.user.user_id }, { $push: { post: recipeExist.recipe_id }, $set: { updated_at: Date.now() } });
 
   //return respond
   return res.status(StatusCodes.CREATED).send(responseGenerators({}, StatusCodes.CREATED, RECIPE.POSTED, false));
@@ -171,7 +196,7 @@ export const getRecipeById = asyncHandler(async (req, res) => {
 export const updateRecipe = asyncHandler(async (req, res) => {
   const { recipeId } = req.params;
 
-  const { recipe_name, diet_preference, dish_type, meal_time, description, number_of_servings, ingredients_used, steps } = req.body;
+  const { recipe_name, diet_preference, dish_type, meal_time, description, number_of_servings, ingredients, steps } = req.body;
 
   const recipeExist = await Recipe.findOne({ recipe_id: recipeId, is_deleted: false, status: 'posted' }, { _id: 0, __v: 0 });
 
@@ -179,10 +204,7 @@ export const updateRecipe = asyncHandler(async (req, res) => {
 
   console.log('Recipe Exist: ', recipeExist);
 
-  // convert string to array of object
-
   // get url from recipe
-
   let recipePhoto = { url: recipeExist.recipe_photo?.url, public_id: recipeExist.recipe_photo.public_id };
   let recipePhotoLocalFile;
 
@@ -204,32 +226,74 @@ export const updateRecipe = asyncHandler(async (req, res) => {
     }
   }
 
-  // updating existing ingredient
-  if (ingredients_used) {
-    const parsedIngredient = JSON.parse(ingredients_used);
+  let parseDietPreference = diet_preference ? JSON.parse(diet_preference) : recipeExist.diet_preference;
+  let parseDishType = dish_type ? JSON.parse(dish_type) : recipeExist.dish_type;
+  let parseMealTime = meal_time ? JSON.parse(meal_time) : recipeExist.meal_time;
 
+  const ingredientsId = generatePublicId();
+
+  const stepsId = generatePublicId();
+
+  // ingredient
+  if (ingredients) {
+    const parsedIngredient = JSON.parse(ingredients);
+
+    //delete ingredient
+    const existingIngredientsIds = recipeExist.ingredients.map((ingredient) => ingredient.ingredients_id);
+    const IncomingIngredientsIds = parsedIngredient.filter((ingredient) => ingredient.ingredients_id).map((ingredient) => ingredient.ingredients_id);
+
+    const ingredientToDelete = existingIngredientsIds.filter((id) => !IncomingIngredientsIds.includes(id));
+
+    console.log('existingIngredientIds:', existingIngredientsIds);
+    console.log('incomingIngredientIds:', IncomingIngredientsIds);
+    console.log('ingredientsToDelete:', ingredientToDelete);
+
+    if (ingredientToDelete.length > 0) {
+      await Recipe.updateOne({ recipe_id: recipeId }, { $pull: { ingredients: { ingredients_id: { $in: ingredientToDelete } } } });
+    }
+
+    // add or update ingredient
     for (const ingredient of parsedIngredient) {
-      if (ingredient._id) {
+      if (ingredient.ingredients_id) {
         await Recipe.updateOne(
-          { recipe_id: recipeId, 'ingredients_used._id': ingredient._id },
-          { $set: { 'ingredients_used.$.name': ingredient.name, 'ingredients_used.$.quantity': ingredient.quantity } }
+          { recipe_id: recipeId, 'ingredients.ingredients_id': ingredient.ingredients_id },
+          { $set: { 'ingredients.$.name': ingredient.name, 'ingredients.$.quantity': ingredient.quantity } }
         );
       } else {
         // adding new ingredient
-        await Recipe.updateOne({ recipe_id: recipeId }, { $push: { ingredients_used: ingredient } });
+        await Recipe.updateOne(
+          { recipe_id: recipeId },
+          { $push: { ingredients: { ingredients_id: ingredientsId, name: ingredient.name, quantity: ingredient.quantity } } }
+        );
       }
     }
   }
-  // updating existing step
+
+  // step
   if (steps) {
     const parsedStep = JSON.parse(steps);
 
+    //delete steps
+    const existingStepsIds = recipeExist.steps.map((step) => step.steps_id);
+    const IncomingStepsIds = parsedStep.filter((step) => step.steps_id).map((step) => step.steps_id);
+
+    const stepToDelete = existingStepsIds.filter((id) => !IncomingStepsIds.includes(id));
+
+    console.log('existingIngredientIds:', existingStepsIds);
+    console.log('incomingIngredientIds:', IncomingStepsIds);
+    console.log('ingredientsToDelete:', stepToDelete);
+
+    if (stepToDelete.length > 0) {
+      await Recipe.updateOne({ recipe_id: recipeId }, { $pull: { steps: { steps_id: { $in: stepToDelete } } } });
+    }
+
+    // add or update step
     for (const step of parsedStep) {
-      if (step._id) {
-        await Recipe.updateOne({ recipe_id: recipeId, 'steps._id': step._id }, { $set: { 'steps.$.description': step.description } });
+      if (step.steps_id) {
+        await Recipe.updateOne({ recipe_id: recipeId, 'steps.steps_id': step.steps_id }, { $set: { 'steps.$.description': step.description } });
       } else {
         // adding new step
-        await Recipe.updateOne({ recipe_id: recipeId }, { $push: { steps: step } });
+        await Recipe.updateOne({ recipe_id: recipeId }, { $push: { steps: { steps_id: stepsId, description: step.description } } });
       }
     }
   }
@@ -240,9 +304,9 @@ export const updateRecipe = asyncHandler(async (req, res) => {
     {
       $set: {
         recipe_name,
-        diet_preference,
-        dish_type,
-        meal_time,
+        diet_preference: parseDietPreference,
+        dish_type: parseDishType,
+        meal_time: parseMealTime,
         description,
         recipe_photo: recipePhoto,
         number_of_servings,
