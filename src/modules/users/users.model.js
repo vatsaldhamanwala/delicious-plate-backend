@@ -10,7 +10,7 @@ const userSchema = new Schema({
   bio: { type: String },
   gender: { type: String, trim: true },
   profile_photo: { url: { type: String }, public_id: { type: String } }, // cloudinary URL
-  post: [{ type: Schema.Types.ObjectId, ref: 'recipes' }],
+  post: { type: [String], default: [] },
   followers: { type: Number, default: 0 },
   followings: { type: Number, default: 0 },
 
