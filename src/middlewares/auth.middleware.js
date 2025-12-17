@@ -27,7 +27,6 @@ export const verifyJWTToken = asyncHandler(async (req, res, next) => {
 
     // check user session exist
     const userSessionExist = await Session.findOne({
-      access_token: token,
       session_author_id: decodeToken.user_id,
       is_expired: false,
     });
@@ -36,6 +35,7 @@ export const verifyJWTToken = asyncHandler(async (req, res, next) => {
     if (!userSessionExist) return res.status(StatusCodes.UNAUTHORIZED).send(responseGenerators({}, StatusCodes.UNAUTHORIZED, TOKEN.EXPIRED, true));
 
     req.user = userExist;
+
     req.session = userSessionExist;
 
     next();

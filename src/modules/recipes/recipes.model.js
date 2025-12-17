@@ -7,10 +7,10 @@ const recipeSchema = new Schema({
   diet_preference: { type: [String], enum: ['veg', 'non-veg', 'healthy', 'beverages', 'vegan'], required: true },
   dish_type: {
     type: [String],
-    enum: ['burger', 'pizza', 'pasta', 'chicken', 'noodles', 'sandwich', 'panner', 'salad', 'soup', 'dessert', 'salad', 'tea', 'coffee', 'soda'],
+    enum: ['burger', 'pizza', 'pasta', 'chicken', 'noodles', 'sandwich', 'panner', 'salad', 'soup', 'dessert', 'tea', 'coffee', 'soda'],
     required: true,
   },
-  meal_time: { type: [String], enum: ['breakfast', 'lunch', 'evening', 'dinner', 'snacks', 'main course', 'starters'], required: true },
+  meal_time: { type: [String], enum: ['breakfast', 'lunch', 'evening', 'dinner', 'snacks', 'main-course', 'starters'], required: true },
   description: { type: String, required: true },
   recipe_photo: { url: { type: String }, public_id: { type: String } }, // cloudinary URL
   number_of_servings: { type: Number },
