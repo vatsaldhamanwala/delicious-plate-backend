@@ -43,12 +43,7 @@ export const changePassword = asyncHandler(async (req, res) => {
 
 //get current user
 export const getCurrentUser = asyncHandler(async (req, res) => {
-  const userExist = await User.findOne({ user_id: req.user.user_id });
-  console.log('user exist', userExist);
-
-  if (!userExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, USER.NOT_FOUND, true));
-
-  return res.status(StatusCodes.OK).send(responseGenerators({ userExist }, StatusCodes.OK, USER.FOUND, false));
+  return res.status(StatusCodes.OK).send(responseGenerators({ user: req.user }, StatusCodes.OK, USER.FOUND, false));
 });
 
 // get user by Id
