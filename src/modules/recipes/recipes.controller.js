@@ -1,6 +1,6 @@
 import { StatusCodes } from 'http-status-codes';
 import { asyncHandler } from '../../utils/async-handler.js';
-import { RECIPE } from '../../common/global.common.js';
+import { RECIPE, USER } from '../../common/global.common.js';
 import { generatePublicId } from '../../common/functions.common.js';
 import { Recipe } from './recipes.model.js';
 import { responseGenerators } from '../../utils/response-generators.js';
@@ -48,7 +48,7 @@ export const createMedia = asyncHandler(async (req, res) => {
   const { recipeId } = req.params;
 
   //find recipe
-  const recipeExist = await Recipe.findOne({ recipe_id: recipeId, is_deleted: false }, { status: 'draft' });
+  const recipeExist = await Recipe.findOne({ recipe_id: recipeId, user_id: req.user.user_id, is_deleted: false }, { status: 'draft' });
 
   console.log('Recipe Exist: ', recipeExist);
 
@@ -101,7 +101,7 @@ export const createIngredientsAndSteps = asyncHandler(async (req, res) => {
   }
 
   //find recipe
-  const recipeExist = await Recipe.findOne({ recipe_id: recipeId, is_deleted: false }, { status: 'draft' });
+  const recipeExist = await Recipe.findOne({ recipe_id: recipeId, user_id: req.user.user_id, is_deleted: false }, { status: 'draft' });
 
   console.log('Recipe Exist: ', recipeExist);
 
@@ -146,7 +146,7 @@ export const reviewAndPostRecipe = asyncHandler(async (req, res) => {
   const { recipeId } = req.params;
 
   //find recipe
-  const recipeExist = await Recipe.findOne({ recipe_id: recipeId, is_deleted: false, status: 'draft' });
+  const recipeExist = await Recipe.findOne({ recipe_id: recipeId, user_id: req.user.user_id, is_deleted: false, status: 'draft' });
 
   console.log('Recipe Exist: ', recipeExist);
 
@@ -160,7 +160,13 @@ export const reviewAndPostRecipe = asyncHandler(async (req, res) => {
 
   //pushing this recipe into users post field
 
-  await User.updateOne({ user_id: req.user.user_id }, { $push: { post: recipeExist.recipe_id }, $set: { updated_at: Date.now() } });
+  await User.updateOne(
+    { user_id: req.user.user_id },
+    {
+      $addToSet: { post: recipeExist.recipe_id },
+      $set: { updated_at: Date.now() },
+    }
+  );
 
   //return respond
   return res.status(StatusCodes.CREATED).send(responseGenerators({}, StatusCodes.CREATED, RECIPE.POSTED, false));
@@ -192,13 +198,65 @@ export const getRecipeById = asyncHandler(async (req, res) => {
   return res.status(StatusCodes.OK).send(responseGenerators({ recipe: recipeExist }, StatusCodes.OK, RECIPE.FETCHED, false));
 });
 
+//like and unlike count
+export const likeOrUnlikeRecipe = asyncHandler(async (req, res) => {
+  const { recipeId } = req.params;
+  const userId = req.user.user_id;
+
+  //find recipe
+  const recipeExist = await Recipe.findOne({ recipe_id: recipeId, is_deleted: false, status: 'posted' }, { _id: 0, __v: 0 });
+  console.log('Recipe Exist: ', recipeExist);
+
+  if (!recipeExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, RECIPE.NOT_FOUND, true));
+
+  const userExist = await User.findOne({ user_id: userId });
+  console.log('userExist: ', userExist);
+
+  //find user
+  if (!userExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, USER.NOT_FOUND, true));
+
+  // user already like then unlike
+  const alreadyLiked = recipeExist.liked_by.includes(userId);
+
+  if (alreadyLiked) {
+    await Recipe.updateOne(
+      { recipe_id: recipeId },
+      {
+        $pull: { liked_by: userId },
+        $inc: { likes: -1 },
+        $set: { updated_at: Date.now() },
+      }
+    );
+
+    return res.status(StatusCodes.OK).send(responseGenerators({ recipe: recipeExist }, StatusCodes.OK, RECIPE.UNLIKED, false));
+  } else {
+    await Recipe.updateOne(
+      { recipe_id: recipeId },
+      {
+        $addToSet: { liked_by: userId },
+        $inc: { likes: 1 },
+        $set: { updated_at: Date.now() },
+      }
+    );
+
+    return res.status(StatusCodes.OK).send(responseGenerators({ recipe: recipeExist }, StatusCodes.OK, RECIPE.LIKED, false));
+  }
+
+  //return respond
+});
+
+// dynamic ingredient and steps scaling as per number of servings
+
 //update recipes
 export const updateRecipe = asyncHandler(async (req, res) => {
   const { recipeId } = req.params;
 
   const { recipe_name, diet_preference, dish_type, meal_time, description, number_of_servings, ingredients, steps } = req.body;
 
-  const recipeExist = await Recipe.findOne({ recipe_id: recipeId, is_deleted: false, status: 'posted' }, { _id: 0, __v: 0 });
+  const recipeExist = await Recipe.findOne(
+    { recipe_id: recipeId, user_id: req.user.user_id, is_deleted: false, status: 'posted' },
+    { _id: 0, __v: 0 }
+  );
 
   if (!recipeExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, RECIPE.NOT_FOUND, true));
 
@@ -324,7 +382,10 @@ export const updateRecipe = asyncHandler(async (req, res) => {
 export const deleteRecipe = asyncHandler(async (req, res) => {
   const { recipeId } = req.params;
 
-  const recipeExist = await Recipe.findOne({ recipe_id: recipeId, is_deleted: false, status: 'posted' }, { _id: 0, __v: 0 });
+  const recipeExist = await Recipe.findOne(
+    { recipe_id: recipeId, user_id: req.user.user_id, is_deleted: false, status: 'posted' },
+    { _id: 0, __v: 0 }
+  );
 
   if (!recipeExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, RECIPE.NOT_FOUND, true));
 

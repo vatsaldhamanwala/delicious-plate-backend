@@ -7,6 +7,7 @@ import {
   deleteRecipe,
   getAllRecipes,
   getRecipeById,
+  likeOrUnlikeRecipe,
   reviewAndPostRecipe,
   updateRecipe,
 } from './recipes.controller.js';
@@ -20,6 +21,8 @@ RecipeRouter.post('/ingredients-and-steps/:recipeId', verifyJWTToken, createIngr
 RecipeRouter.post('/review/:recipeId', verifyJWTToken, reviewAndPostRecipe);
 RecipeRouter.get('', getAllRecipes);
 RecipeRouter.get('/:recipeId', verifyJWTToken, getRecipeById);
+RecipeRouter.post('/:recipeId/like', verifyJWTToken, likeOrUnlikeRecipe);
+
 RecipeRouter.patch('/edit-recipe/:recipeId', verifyJWTToken, upload.single('recipe_photo'), updateRecipe);
 RecipeRouter.delete('/:recipeId', verifyJWTToken, deleteRecipe);
 

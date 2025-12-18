@@ -30,6 +30,8 @@ export const RECIPE = {
   FETCHED: 'Recipe fetched successfully.',
   UPDATED: 'Recipe successfully updated.',
   DELETED: 'Recipe deleted successfully.',
+  LIKED: 'Recipe liked successfully.',
+  UNLIKED: 'Recipe Unlike.',
 };
 
 export const TOKEN = {
