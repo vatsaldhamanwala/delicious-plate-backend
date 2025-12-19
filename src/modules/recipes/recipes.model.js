@@ -19,7 +19,8 @@ const recipeSchema = new Schema({
     {
       ingredients_id: { type: String, required: true },
       name: { type: String, required: true },
-      quantity: { type: String, required: true },
+      quantity_value: { type: Number, required: true },
+      quantity_unit: { type: String, required: true },
     },
   ],
   steps: [{ steps_id: { type: String, required: true }, description: { type: String, required: true } }],

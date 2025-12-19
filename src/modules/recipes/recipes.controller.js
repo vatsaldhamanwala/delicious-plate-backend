@@ -114,7 +114,8 @@ export const createIngredientsAndSteps = asyncHandler(async (req, res) => {
   const createIngredients = ingredients.map((ingredient) => ({
     ingredients_id: ingredientsId,
     name: ingredient.name,
-    quantity: ingredient.quantity,
+    quantity_value: ingredient.quantity_value,
+    quantity_unit: ingredient.quantity_unit,
   }));
 
   const createSteps = steps.map((step) => ({
@@ -153,10 +154,11 @@ export const reviewAndPostRecipe = asyncHandler(async (req, res) => {
   if (!recipeExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, RECIPE.NOT_FOUND, true));
 
   //check all steps are previous steps are completed
-  if (!recipeExist.is_basic_info_step_completed && !recipeExist.is_media_step_completed && !recipeExist.is_ingredients_and_steps_step_completed)
+  if (recipeExist.is_basic_info_step_completed && recipeExist.is_media_step_completed && recipeExist.is_ingredients_and_steps_step_completed) {
+    await Recipe.updateOne({ recipe_id: recipeId }, { $set: { status: 'posted', updated_at: Date.now() } }, { new: true });
+  } else {
     return res.status(StatusCodes.BAD_REQUEST).send(responseGenerators({}, StatusCodes.BAD_REQUEST, RECIPE.STEP_IS_INCOMPLETE, true));
-
-  await Recipe.updateOne({ recipe_id: recipeId }, { $set: { status: 'posted', updated_at: Date.now() } }, { new: true });
+  }
 
   //pushing this recipe into users post field
 
@@ -186,16 +188,34 @@ export const getAllRecipes = asyncHandler(async (req, res) => {
 //get recipes by id
 export const getRecipeById = asyncHandler(async (req, res) => {
   const { recipeId } = req.params;
+  const requestedServing = Number(req.query.number_of_servings);
 
   //find recipe
-  const recipeExist = await Recipe.findOne({ recipe_id: recipeId, is_deleted: false, status: 'posted' }, { _id: 0, __v: 0 });
+  const recipeExist = await Recipe.findOne({ recipe_id: recipeId, is_deleted: false, status: 'posted' }, { _id: 0, __v: 0 }).lean();
 
   if (!recipeExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, RECIPE.NOT_FOUND, true));
 
   console.log('Recipe Exist: ', recipeExist);
 
+  let scaleIngredient = recipeExist.ingredients;
+
+  if (requestedServing && recipeExist.number_of_servings) {
+    const factor = requestedServing / recipeExist.number_of_servings;
+
+    scaleIngredient = recipeExist.ingredients.map((ingredient) => ({
+      ...ingredient,
+      quantity_value: (ingredient.quantity_value * factor).toFixed(2),
+    }));
+  }
+
+  const recipeResponse = {
+    ...recipeExist,
+    ingredients: scaleIngredient,
+    requested_serving: requestedServing || recipeExist.number_of_servings,
+  };
+
   //return respond
-  return res.status(StatusCodes.OK).send(responseGenerators({ recipe: recipeExist }, StatusCodes.OK, RECIPE.FETCHED, false));
+  return res.status(StatusCodes.OK).send(responseGenerators({ recipe: recipeResponse }, StatusCodes.OK, RECIPE.FETCHED, false));
 });
 
 //like and unlike count
@@ -244,8 +264,6 @@ export const likeOrUnlikeRecipe = asyncHandler(async (req, res) => {
 
   //return respond
 });
-
-// dynamic ingredient and steps scaling as per number of servings
 
 //update recipes
 export const updateRecipe = asyncHandler(async (req, res) => {
@@ -315,13 +333,28 @@ export const updateRecipe = asyncHandler(async (req, res) => {
       if (ingredient.ingredients_id) {
         await Recipe.updateOne(
           { recipe_id: recipeId, 'ingredients.ingredients_id': ingredient.ingredients_id },
-          { $set: { 'ingredients.$.name': ingredient.name, 'ingredients.$.quantity': ingredient.quantity } }
+          {
+            $set: {
+              'ingredients.$.name': ingredient.name,
+              'ingredients.$.quantity_value': ingredient.quantity_value,
+              'ingredients.$.quantity_unit': ingredient.quantity_unit,
+            },
+          }
         );
       } else {
         // adding new ingredient
         await Recipe.updateOne(
           { recipe_id: recipeId },
-          { $push: { ingredients: { ingredients_id: ingredientsId, name: ingredient.name, quantity: ingredient.quantity } } }
+          {
+            $push: {
+              ingredients: {
+                ingredients_id: ingredientsId,
+                name: ingredient.name,
+                quantity_value: ingredient.quantity_value,
+                quantity_unit: ingredient.quantity_unit,
+              },
+            },
+          }
         );
       }
     }
