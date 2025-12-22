@@ -34,6 +34,22 @@ export const RECIPE = {
   UNLIKED: 'Recipe Unlike.',
 };
 
+export const USERRECIPECOLLECTION = {
+  CREATED: 'User recipe collection created successfully.',
+  FETCHED: 'User recipe collection fetched successfully.',
+  RECIPES_FETCHED: 'All recipes are fetched successfully from this collection.',
+  UPDATED: 'User recipe collection updated successfully.',
+  DELETED: 'User recipe collection deleted successfully.',
+  RECIPE_DELETED: 'Recipe deleted from this collection successfully.',
+  NOT_FOUND: 'User recipe collection not found.',
+  RECIPE_NOT_FOUND: 'Recipe not found in this collection.',
+  NAME_REQUIRED: 'User recipe collection name required.',
+  ALREADY_EXIST: 'User recipe collection is already exists.',
+  RECIPE_ALREADY_EXIST: 'Recipe already exists in this collection.',
+  RECIPE_ID_REQUIRED: 'Recipe Id is required.',
+  RECIPE_ADDED: 'Recipe added to this collection successfully.',
+};
+
 export const TOKEN = {
   ERROR: 'Something went wrong while generating access and refresh token.',
   UNAUTHORIZED: 'Unauthorized access,  please provide valid token.',
