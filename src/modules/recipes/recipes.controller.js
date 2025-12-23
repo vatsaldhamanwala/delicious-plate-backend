@@ -48,7 +48,7 @@ export const createMedia = asyncHandler(async (req, res) => {
   const { recipeId } = req.params;
 
   //find recipe
-  const recipeExist = await Recipe.findOne({ recipe_id: recipeId, user_id: req.user.user_id, is_deleted: false }, { status: 'draft' });
+  const recipeExist = await Recipe.findOne({ recipe_id: recipeId, user_id: req.user.user_id, is_deleted: false, status: 'draft' });
 
   console.log('Recipe Exist: ', recipeExist);
 
@@ -101,7 +101,7 @@ export const createIngredientsAndSteps = asyncHandler(async (req, res) => {
   }
 
   //find recipe
-  const recipeExist = await Recipe.findOne({ recipe_id: recipeId, user_id: req.user.user_id, is_deleted: false }, { status: 'draft' });
+  const recipeExist = await Recipe.findOne({ recipe_id: recipeId, user_id: req.user.user_id, is_deleted: false, status: 'draft' });
 
   console.log('Recipe Exist: ', recipeExist);
 
@@ -167,7 +167,8 @@ export const reviewAndPostRecipe = asyncHandler(async (req, res) => {
     {
       $addToSet: { post: recipeExist.recipe_id },
       $set: { updated_at: setTimesTamp() },
-    }
+    },
+    { new: true }
   );
 
   //return respond
@@ -197,6 +198,7 @@ export const getRecipeById = asyncHandler(async (req, res) => {
 
   console.log('Recipe Exist: ', recipeExist);
 
+  // scaling ingredients as per number of servings
   let scaleIngredient = recipeExist.ingredients;
 
   if (requestedServing && recipeExist.number_of_servings) {
@@ -211,7 +213,7 @@ export const getRecipeById = asyncHandler(async (req, res) => {
   const recipeResponse = {
     ...recipeExist,
     ingredients: scaleIngredient,
-    requested_serving: requestedServing || recipeExist.number_of_servings,
+    requested_serving: requestedServing || 0,
   };
 
   //return respond
@@ -263,6 +265,55 @@ export const likeOrUnlikeRecipe = asyncHandler(async (req, res) => {
   }
 
   //return respond
+});
+
+export const searchRecipeWithFilters = asyncHandler(async (req, res) => {
+  const { recipe_name, diet_preference, dish_type, meal_time } = req.query;
+
+  const filters = {
+    status: 'posted',
+    is_deleted: false,
+  };
+
+  //recipe name
+  if (recipe_name) {
+    filters.recipe_name = { $regex: recipe_name, $options: 'i' };
+  }
+
+  //diet_preference
+  if (diet_preference) {
+    const dietPreferenceArray = diet_preference.split(',');
+    filters.diet_preference = { $in: dietPreferenceArray };
+  }
+
+  //dish_type
+  if (dish_type) {
+    const dishTypeArray = dish_type.split(',');
+    filters.dish_type = { $in: dishTypeArray };
+  }
+
+  //meal_time
+  if (meal_time) {
+    const mealTypeArray = meal_time.split(',');
+    filters.meal_time = { $in: mealTypeArray };
+  }
+
+  const recipes = await Recipe.find(filters, {
+    _id: 0,
+    recipe_name: 1,
+    diet_preference: 1,
+    dish_type: 1,
+    meal_time: 1,
+    ingredients: 1,
+    steps: 1,
+    number_of_servings: 1,
+    is_deleted: 1,
+    status: 1,
+  }).sort({ created_at: -1 });
+  console.log('Recipe Exist: ', recipes);
+
+  //return respond
+  return res.status(StatusCodes.OK).send(responseGenerators({ recipes }, StatusCodes.OK, RECIPE.FETCHED, false));
 });
 
 //update recipes

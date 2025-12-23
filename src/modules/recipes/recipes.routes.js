@@ -9,6 +9,7 @@ import {
   getRecipeById,
   likeOrUnlikeRecipe,
   reviewAndPostRecipe,
+  searchRecipeWithFilters,
   updateRecipe,
 } from './recipes.controller.js';
 import { upload } from '../../middlewares/multer.middleware.js';
@@ -19,6 +20,7 @@ RecipeRouter.post('/basic-info', verifyJWTToken, createBasicInfo);
 RecipeRouter.post('/media/:recipeId', verifyJWTToken, upload.single('recipe_photo'), createMedia);
 RecipeRouter.post('/ingredients-and-steps/:recipeId', verifyJWTToken, createIngredientsAndSteps);
 RecipeRouter.post('/review/:recipeId', verifyJWTToken, reviewAndPostRecipe);
+RecipeRouter.get('/search', searchRecipeWithFilters);
 RecipeRouter.get('', getAllRecipes);
 RecipeRouter.get('/:recipeId', verifyJWTToken, getRecipeById);
 RecipeRouter.post('/:recipeId/like', verifyJWTToken, likeOrUnlikeRecipe);

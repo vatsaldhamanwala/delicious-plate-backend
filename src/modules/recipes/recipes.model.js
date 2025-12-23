@@ -7,7 +7,7 @@ const recipeSchema = new Schema({
   diet_preference: { type: [String], enum: ['veg', 'non-veg', 'healthy', 'beverages', 'vegan'], required: true, index: true },
   dish_type: {
     type: [String],
-    enum: ['burger', 'pizza', 'pasta', 'chicken', 'noodles', 'sandwich', 'panner', 'salad', 'soup', 'dessert', 'tea', 'coffee', 'soda'],
+    enum: ['burger', 'pizza', 'pasta', 'dosa', 'chicken', 'noodles', 'sandwich', 'panner', 'salad', 'soup', 'dessert', 'tea', 'coffee', 'soda'],
     required: true,
     index: true,
   },
