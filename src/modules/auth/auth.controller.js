@@ -5,7 +5,7 @@ import { StatusCodes } from 'http-status-codes';
 import { User } from '../users/users.model.js';
 import { Session } from '../sessions/sessions.model.js';
 import { uploadOnCloudinary } from '../../utils/cloudinary.js';
-import { generatePublicId } from '../../common/functions.common.js';
+import { generatePublicId, setTimesTamp } from '../../common/functions.common.js';
 import { generateTokens } from '../../utils/generateTokens.js';
 import jwt from 'jsonwebtoken';
 
@@ -62,7 +62,7 @@ export const signUpUser = asyncHandler(async (req, res) => {
     email,
     password,
     profile_photo: profilePhoto,
-    created_at: Date.now(),
+    created_at: setTimesTamp(),
   });
   console.log('🚀 ~ newUser:', newUser);
 
@@ -77,7 +77,7 @@ export const signUpUser = asyncHandler(async (req, res) => {
     refresh_token: refreshToken,
     device_ip: 'BACKEND-IP',
     user_agent: 'DELICIOUS-PLATE',
-    created_at: Date.now(),
+    created_at: setTimesTamp(),
   });
 
   const options = {
@@ -115,7 +115,7 @@ export const loginUser = asyncHandler(async (req, res) => {
   if (!isValidPassword)
     return res.status(StatusCodes.UNAUTHORIZED).send(responseGenerators({}, StatusCodes.UNAUTHORIZED, USER.INCORRECT_PASSWORD, true));
 
-  await Session.updateMany({ session_author_id: userExist.user_id, is_expired: false }, { $set: { is_expired: true, expired_at: Date.now() } });
+  await Session.updateMany({ session_author_id: userExist.user_id, is_expired: false }, { $set: { is_expired: true, expired_at: setTimesTamp() } });
 
   // generate tokens
   const { accessToken, refreshToken } = await generateTokens({ user_id: userExist.user_id });
@@ -127,7 +127,7 @@ export const loginUser = asyncHandler(async (req, res) => {
     refresh_token: refreshToken,
     device_ip: 'BACKEND-IP',
     user_agent: 'DELICIOUS-PLATE',
-    created_at: Date.now(),
+    created_at: setTimesTamp(),
   });
 
   // set security for cookies
@@ -150,7 +150,7 @@ export const logoutUser = asyncHandler(async (req, res) => {
     const { user_id } = req.user;
     const { access_token } = req.session;
 
-    await Session.updateOne({ session_author_id: user_id, access_token }, { $set: { is_expired: true, updated_at: Date.now() } });
+    await Session.updateOne({ session_author_id: user_id, access_token }, { $set: { is_expired: true, updated_at: setTimesTamp() } });
 
     // set security for cookies
     const options = {
@@ -208,7 +208,7 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
 
     await Session.updateOne(
       { session_author_id: decodeToken.user_id, is_expired: false },
-      { $set: { access_token: accessToken, refresh_token: refreshToken, updated_at: Date.now() } }
+      { $set: { access_token: accessToken, refresh_token: refreshToken, updated_at: setTimesTamp() } }
     );
 
     const options = {

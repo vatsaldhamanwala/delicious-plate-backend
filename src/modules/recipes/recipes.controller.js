@@ -1,7 +1,7 @@
 import { StatusCodes } from 'http-status-codes';
 import { asyncHandler } from '../../utils/async-handler.js';
 import { RECIPE, USER } from '../../common/global.common.js';
-import { generatePublicId } from '../../common/functions.common.js';
+import { generatePublicId, setTimesTamp } from '../../common/functions.common.js';
 import { Recipe } from './recipes.model.js';
 import { responseGenerators } from '../../utils/response-generators.js';
 import { User } from '../users/users.model.js';
@@ -36,7 +36,7 @@ export const createBasicInfo = asyncHandler(async (req, res) => {
     description,
     status: 'draft',
     is_basic_info_step_completed: true,
-    created_at: Date.now(),
+    created_at: setTimesTamp(),
   });
 
   //return respond
@@ -82,7 +82,7 @@ export const createMedia = asyncHandler(async (req, res) => {
 
   await Recipe.updateOne(
     { recipe_id: recipeId },
-    { $set: { recipe_photo: recipePhoto, is_media_step_completed: true, status: 'draft', updated_at: Date.now() } },
+    { $set: { recipe_photo: recipePhoto, is_media_step_completed: true, status: 'draft', updated_at: setTimesTamp() } },
     { new: true }
   );
 
@@ -132,7 +132,7 @@ export const createIngredientsAndSteps = asyncHandler(async (req, res) => {
         steps: createSteps,
         is_ingredients_and_steps_step_completed: true,
         status: 'draft',
-        updated_at: Date.now(),
+        updated_at: setTimesTamp(),
       },
     },
     { new: true }
@@ -155,7 +155,7 @@ export const reviewAndPostRecipe = asyncHandler(async (req, res) => {
 
   //check all steps are previous steps are completed
   if (recipeExist.is_basic_info_step_completed && recipeExist.is_media_step_completed && recipeExist.is_ingredients_and_steps_step_completed) {
-    await Recipe.updateOne({ recipe_id: recipeId }, { $set: { status: 'posted', updated_at: Date.now() } }, { new: true });
+    await Recipe.updateOne({ recipe_id: recipeId }, { $set: { status: 'posted', updated_at: setTimesTamp() } }, { new: true });
   } else {
     return res.status(StatusCodes.BAD_REQUEST).send(responseGenerators({}, StatusCodes.BAD_REQUEST, RECIPE.STEP_IS_INCOMPLETE, true));
   }
@@ -166,7 +166,7 @@ export const reviewAndPostRecipe = asyncHandler(async (req, res) => {
     { user_id: req.user.user_id },
     {
       $addToSet: { post: recipeExist.recipe_id },
-      $set: { updated_at: Date.now() },
+      $set: { updated_at: setTimesTamp() },
     }
   );
 
@@ -244,7 +244,7 @@ export const likeOrUnlikeRecipe = asyncHandler(async (req, res) => {
       {
         $pull: { liked_by: userId },
         $inc: { likes: -1 },
-        $set: { updated_at: Date.now() },
+        $set: { updated_at: setTimesTamp() },
       }
     );
 
@@ -255,7 +255,7 @@ export const likeOrUnlikeRecipe = asyncHandler(async (req, res) => {
       {
         $addToSet: { liked_by: userId },
         $inc: { likes: 1 },
-        $set: { updated_at: Date.now() },
+        $set: { updated_at: setTimesTamp() },
       }
     );
 
@@ -401,7 +401,7 @@ export const updateRecipe = asyncHandler(async (req, res) => {
         description,
         recipe_photo: recipePhoto,
         number_of_servings,
-        updated_at: Date.now(),
+        updated_at: setTimesTamp(),
       },
     },
     { new: true }
@@ -424,7 +424,7 @@ export const deleteRecipe = asyncHandler(async (req, res) => {
 
   console.log('Recipe Exist: ', recipeExist);
 
-  await Recipe.updateOne({ recipe_id: recipeId }, { $set: { is_deleted: true, deleted_at: Date.now(), updated_at: Date.now() } });
+  await Recipe.updateOne({ recipe_id: recipeId }, { $set: { is_deleted: true, deleted_at: setTimesTamp(), updated_at: setTimesTamp() } });
 
   //return respond
   return res.status(StatusCodes.OK).send(responseGenerators({}, StatusCodes.OK, RECIPE.DELETED, false));

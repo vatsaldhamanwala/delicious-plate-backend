@@ -1,5 +1,5 @@
 import { StatusCodes } from 'http-status-codes';
-import { generatePublicId } from '../../common/functions.common.js';
+import { generatePublicId, setTimesTamp } from '../../common/functions.common.js';
 import { RECIPE, USERRECIPECOLLECTION } from '../../common/global.common.js';
 import { asyncHandler } from '../../utils/async-handler.js';
 import { responseGenerators } from '../../utils/response-generators.js';
@@ -29,7 +29,7 @@ export const createUserRecipeCollection = asyncHandler(async (req, res) => {
     user_id: userId,
     name,
     recipes,
-    created_at: Date.now(),
+    created_at: setTimesTamp(),
   });
 
   console.log('new collection: ', newCollection);
@@ -76,7 +76,7 @@ export const addRecipesToCollection = asyncHandler(async (req, res) => {
     },
     {
       $addToSet: { recipes: recipe_id },
-      $set: { updated_at: Date.now(), updated_by: userId },
+      $set: { updated_at: setTimesTamp(), updated_by: userId },
     }
   );
 
@@ -116,7 +116,7 @@ export const removeRecipesFromCollection = asyncHandler(async (req, res) => {
     },
     {
       $pull: { recipes: recipeId },
-      $set: { updated_at: Date.now(), updated_by: userId },
+      $set: { updated_at: setTimesTamp(), updated_by: userId },
     }
   );
 
@@ -216,7 +216,7 @@ export const updateUserRecipeCollection = asyncHandler(async (req, res) => {
   //update user-recipe-collection
   await UserRecipeCollection.updateOne(
     { user_recipe_collection_id: userRecipeCollectionId },
-    { $set: { ...req.body, updated_at: Date.now(), updated_by: userId } },
+    { $set: { ...req.body, updated_at: setTimesTamp(), updated_by: userId } },
     { new: true }
   );
 
@@ -242,7 +242,7 @@ export const deleteUserRecipeCollection = asyncHandler(async (req, res) => {
   //delete user-recipe-collection
   await UserRecipeCollection.updateOne(
     { user_recipe_collection_id: userRecipeCollectionId, is_deleted: false },
-    { $set: { is_deleted: true, deleted_at: Date.now(), deleted_by: userId } }
+    { $set: { is_deleted: true, deleted_at: setTimesTamp(), deleted_by: userId } }
   );
 
   //return respond

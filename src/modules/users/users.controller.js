@@ -26,7 +26,7 @@ export const changePassword = asyncHandler(async (req, res) => {
 
   await userExist.save({ validateBeforeSave: false });
 
-  await Session.updateMany({ session_author_id: userExist.user_id, is_expired: false }, { $set: { is_expired: true, updated_at: Date.now() } });
+  await Session.updateMany({ session_author_id: userExist.user_id, is_expired: false }, { $set: { is_expired: true, updated_at: setTimesTamp() } });
 
   const options = {
     httpOnly: true,
@@ -111,7 +111,16 @@ export const updateUserProfile = asyncHandler(async (req, res) => {
 
   await User.findOneAndUpdate(
     { user_id: userExist.user_id },
-    { $set: { full_name, user_name, profile_photo: { url: profilePhotoUrl, public_id: profilePhotoPublicId }, bio, gender, updated_at: Date.now() } },
+    {
+      $set: {
+        full_name,
+        user_name,
+        profile_photo: { url: profilePhotoUrl, public_id: profilePhotoPublicId },
+        bio,
+        gender,
+        updated_at: setTimesTamp(),
+      },
+    },
     { new: true }
   );
 
@@ -125,11 +134,14 @@ export const deleteUser = asyncHandler(async (req, res) => {
 
   if (!userExist) return res.status(StatusCodes.NOT_FOUND).send(responseGenerators({}, StatusCodes.NOT_FOUND, USER.NOT_FOUND, true));
 
-  await User.findOneAndUpdate({ user_id: userId, is_deleted: false }, { $set: { is_deleted: true, deleted_at: Date.now(), updated_at: Date.now() } });
+  await User.findOneAndUpdate(
+    { user_id: userId, is_deleted: false },
+    { $set: { is_deleted: true, deleted_at: setTimesTamp(), updated_at: setTimesTamp() } }
+  );
 
   await Session.updateMany(
     { session_author_id: userExist.user_id, is_expired: false },
-    { $set: { is_expired: true, expired_at: Date.now(), updated_at: Date.now() } },
+    { $set: { is_expired: true, expired_at: setTimesTamp(), updated_at: setTimesTamp() } },
     { new: true }
   );
 
